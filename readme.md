@@ -34,7 +34,17 @@ make debug      # Builds the CLI in debug mode
 make release    # Builds the CLI in release mode
 ```
 
----
+> ⚠️ **Important:** Before running the CLI, update the RPC URL in `src/main.rs`:
+>
+> ```rust
+> let rpc = RpcClient::new_with_timeout(
+>     "YOUR MAINET RPC".to_string(),
+>     Duration::from_secs(600),
+> );
+> ```
+>
+> Replace `"YOUR MAINET RPC"` with a valid **Mainnet** RPC endpoint to avoid
+> timeouts or rate limiting.
 
 ## Usage
 
