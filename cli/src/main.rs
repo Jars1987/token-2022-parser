@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
         Commands::GetTokensWithMetadataAccount => {
             // Create a Solana RPC client with a 60-second timeout
             let rpc = RpcClient::new_with_timeout(
-                "https://devnet.helius-rpc.com/?api-key=XXXX".to_string(),
+                "https://mainnet.helius-rpc.com/?api-key=XXXX".to_string(),
                 Duration::from_secs(120),
             );
 
