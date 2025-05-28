@@ -39,13 +39,17 @@ async fn main() -> Result<()> {
         Commands::GetTokensWithMetadataAccount => {
             // Create a Solana RPC client with a 60-second timeout
             let rpc = RpcClient::new_with_timeout(
-                "https://mainnet.helius-rpc.com/?api-key=fc421f09-346e-447f-92e6-045a45a55301"
-                    .to_string(),
-                Duration::from_secs(60),
+                "https://devnet.helius-rpc.com/?api-key=XXXX".to_string(),
+                Duration::from_secs(120),
             );
 
             // Fetch all token-2022 mint accounts
             let mint_accounts = fetch_all_token2022_mints(&rpc).await?;
+
+            println!(
+                "Fetched all the accounts. Number of accounts fetched: {}",
+                mint_accounts.len()
+            );
 
             // For each mint account, derive the corresponding Metadata PDA using Metaplex
             let metadata_pubkeys: Vec<Pubkey> = mint_accounts
@@ -63,8 +67,7 @@ async fn main() -> Result<()> {
         Commands::GetTokensWithExtensions => {
             // Create a Solana RPC client with a 60-second timeout
             let rpc = RpcClient::new_with_timeout(
-                "https://mainnet.helius-rpc.com/?api-key=fc421f09-346e-447f-92e6-045a45a55301"
-                    .to_string(),
+                "https://mainnet.helius-rpc.com/?api-key=XXXX".to_string(),
                 Duration::from_secs(60),
             );
 

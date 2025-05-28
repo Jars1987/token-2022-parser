@@ -1,8 +1,9 @@
 use futures::future::join_all;
 use mpl_token_metadata::accounts::Metadata;
-use solana_account_decoder::UiAccountEncoding;
+use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
+use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
 use solana_sdk::account::Account;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
@@ -15,16 +16,39 @@ use spl_token_2022::{extension::BaseStateWithExtensions, state::Mint};
 pub async fn fetch_all_token2022_mints(
     rpc_client: &RpcClient,
 ) -> anyhow::Result<Vec<(pubkey::Pubkey, Account)>> {
-    // Configure how to fetch accounts — we want base64-encoded data and confirmed commitment level. No filters needed.
+    // Use a memcmp filter at offset 45 to match the `is_initialized` byte.
+    // In Token-2022 mint accounts, `is_initialized` is located at byte offset 45
+    // (due to padding after the 33-byte COption<Pubkey> mint_authority, padded to 36).
+    //
+    // We filter for accounts where this byte is 1, indicating an initialized mint.
+    // This may still include false positives (e.g., token accounts that coincidentally
+    // have 1 at byte 45), but those will fail due to deserialization as `Mint` or by attempting
+    // to retrieve account data for the pda, so they’ll be ignored.
+    let is_initialize_filter = Some(
+        vec![RpcFilterType::Memcmp(Memcmp::new(
+            45,
+            MemcmpEncodedBytes::Bytes(vec![1]),
+        ))]
+        .into(),
+    );
+
+    // use data_slice_config if you only care about the pubkeys
+    let data_slice_config = Some(UiDataSliceConfig {
+        offset: 0,
+        length: 0,
+    });
+
+    // Configure how to fetch accounts — we want base64-encoded data and confirmed commitment level.
     let config = RpcProgramAccountsConfig {
-        filters: None,
+        filters: is_initialize_filter,
         account_config: RpcAccountInfoConfig {
             encoding: Some(UiAccountEncoding::Base64),
             commitment: Some(CommitmentConfig::confirmed()),
+            //data_slice: data_slice_config,
             ..RpcAccountInfoConfig::default()
         },
-        with_context: Some(false),
-        sort_results: Some(true),
+        with_context: None,
+        sort_results: Some(true.into()),
     };
 
     let program_id = pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
@@ -136,23 +160,3 @@ pub fn print_mints_with_extensions(mints_with_exts: &[(Pubkey, Vec<String>)]) {
         println!();
     }
 }
-
-/*
-
-make reference that we could use chunks but that would be sequencial and would take a lot if time so if RPC allows it better to use join from tokio
-
- // let mut all_results = Vec::new();
-
-    // for (i, chunk) in lmetadata_pubkeys.chunks(100).enumerate() {
-    //     println!("Fetching batch {} ({} accounts)...", i + 1, chunk.len());
-
-    //     let result = rpc_client
-    //         .get_multiple_accounts_with_config(chunk, config.clone())
-    //         .await?;
-
-    //     all_results.extend(result.value);
-    // }
-
-    // Ok(all_results)
-
-*/
