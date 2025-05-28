@@ -1,0 +1,17 @@
+[package]
+name = "sdk"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+solana-client.workspace = true
+solana-sdk.workspace = true
+spl-token-2022.workspace = true
+spl-token-metadata-interface.workspace = true
+anyhow.workspace = true
+
+mpl-token-metadata = "5.1.0"
+solana-account-decoder = "2.2.7"
+futures = "0.3.31"
+
+

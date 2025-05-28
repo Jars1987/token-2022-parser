@@ -1,0 +1,10 @@
+[workspace]
+members = [ "cli", "sdk"]
+resolver = "2"
+
+[workspace.dependencies]
+solana-client = "=2.2.7"
+solana-sdk = "=2.2.2"
+anyhow = "1.0.98"
+spl-token-metadata-interface = "0.7.0"
+spl-token-2022 = "9.0.0"
