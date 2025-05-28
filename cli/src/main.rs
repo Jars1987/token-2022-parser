@@ -37,10 +37,10 @@ async fn main() -> Result<()> {
     //Dispatch based on the subcommand provided by the user
     match cli.command {
         Commands::GetTokensWithMetadataAccount => {
-            // Create a Solana RPC client with a 60-second timeout
+            // Create a Solana RPC client with a 60o-second timeout as the accounts fetched reach almost 20M
             let rpc = RpcClient::new_with_timeout(
-                "https://mainnet.helius-rpc.com/?api-key=XXXX".to_string(),
-                Duration::from_secs(120),
+                "YOUR MAINET RPC".to_string(),
+                Duration::from_secs(600),
             );
 
             // Fetch all token-2022 mint accounts
@@ -65,10 +65,10 @@ async fn main() -> Result<()> {
         }
         // Command 2: Get all token-2022 mints that have one or more token extensions
         Commands::GetTokensWithExtensions => {
-            // Create a Solana RPC client with a 60-second timeout
+            // Create a Solana RPC client with a 600-second timeout as the accounts fetched reach almost 20M
             let rpc = RpcClient::new_with_timeout(
-                "https://mainnet.helius-rpc.com/?api-key=XXXX".to_string(),
-                Duration::from_secs(60),
+                "YOUR MAINET RPC".to_string(),
+                Duration::from_secs(600),
             );
 
             // Fetch all Token-2022 mint accounts
