@@ -14,7 +14,8 @@ PDAs, and identifies which mints have extensions enabled using TLV parsing.
 - Fetches all Token-2022 mints from Solana.
 - Derives Metadata PDAs using `mpl-token-metadata`.
 - Detects and prints all Token-2022 extensions (e.g. `TransferHook`,
-  `MetadataPointer`, etc.).
+  `MetadataPointer`, `MintCloseAuthority`, etc.).
+- Support for custom RPC endpoints via `--rpc-url`.
 
 ---
 
@@ -34,18 +35,6 @@ make debug      # Builds the CLI in debug mode
 make release    # Builds the CLI in release mode
 ```
 
-> ⚠️ **Important:** Before running the CLI, update the RPC URL in `src/main.rs`:
->
-> ```rust
-> let rpc = RpcClient::new_with_timeout(
->     "YOUR MAINET RPC".to_string(),
->     Duration::from_secs(600),
-> );
-> ```
->
-> Replace `"YOUR MAINET RPC"` with a valid **Mainnet** RPC endpoint to avoid
-> timeouts or rate limiting.
-
 ## Usage
 
 Once built, you can run the CLI using Cargo:
@@ -63,6 +52,13 @@ Or if you've built a release binary:
 
 ```
 
+You can also pass a custom RPC URL:
+
+```bash
+cargo run -- get-tokens-with-extensions --rpc-url https://api.mainnet-beta.solana.com
+
+```
+
 ## Available Commands
 
 get-tokens-with-metadata-account: Fetch all Token-2022 mints and print those
@@ -70,6 +66,13 @@ with valid metadata accounts.
 
 get-tokens-with-extensions: Fetch all Token-2022 mints and print those with one
 or more TLV-based token extensions.
+
+To see full help:
+
+```
+cargo run -- --help
+cargo run -- get-tokens-with-extensions --help
+```
 
 ## License
 

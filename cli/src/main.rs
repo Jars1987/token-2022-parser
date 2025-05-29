@@ -1,18 +1,37 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use clap::{command, Parser, Subcommand};
+use clap::{ command, Parser, Subcommand };
 use sdk::token_utils::{
-    derive_metadata_pda, fetch_all_token2022_mints, fetch_metadata_accounts,
-    filter_mints_with_extensions, print_metadata_results, print_mints_with_extensions,
+    derive_metadata_pda,
+    fetch_all_token2022_mints,
+    fetch_metadata_accounts,
+    filter_mints_with_extensions,
+    print_metadata_results,
+    print_mints_with_extensions,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
 
 /// Entry point for the CLI app, using the `clap` derive macro to auto-generate argument parsing.
 #[derive(Parser)]
-#[command(name = "spl-token-cli")]
+#[command(
+    name = "spl-token-cli",
+    about = "SPL Token-2022 Parser",
+    long_about = "A CLI tool to query and parse SPL Token-2022 mint accounts.\n\
+                  It fetches all mints and checks for token extensions or attempts to load \
+                  associated metadata accounts using Metaplex's PDA derivation."
+)]
 pub struct Cli {
+    /// Custom RPC URL to use for queries (defaults to Solana Devnet)
+    #[arg(
+        long,
+        help = "Custom RPC URL to use for Solana queries (defaults to Devnet)",
+        default_value = "https://api.devnet.solana.com",
+        global = true
+    )]
+    pub rpc_url: String,
+
     /// The subcommand to run
     #[command(subcommand)]
     pub command: Commands,
@@ -22,9 +41,11 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     /// Retrieve all SPL Token-2022 mints with associated metadata accounts
+    #[command(about = "Fetch all Metadata accounts from SPL Token-2022 mints")]
     GetTokensWithMetadataAccount,
 
     /// Retrieve all SPL Token-2022 mints that use token extensions
+    #[command(about = "Fetch all SPL Token-2022 mints with extensions and print those extensions")]
     GetTokensWithExtensions,
 }
 
@@ -34,15 +55,12 @@ async fn main() -> Result<()> {
     // Automatically handles --help, --version, and argument validation
     let cli = Cli::parse();
 
+    // Create the Solana RPC client using user-specified or default endpoint
+    let rpc = RpcClient::new_with_timeout(cli.rpc_url, Duration::from_secs(600));
+
     //Dispatch based on the subcommand provided by the user
     match cli.command {
         Commands::GetTokensWithMetadataAccount => {
-            // Create a Solana RPC client with a 60o-second timeout as the accounts fetched reach almost 20M
-            let rpc = RpcClient::new_with_timeout(
-                "YOUR MAINET RPC".to_string(),
-                Duration::from_secs(600),
-            );
-
             // Fetch all token-2022 mint accounts
             let mint_accounts = fetch_all_token2022_mints(&rpc).await?;
 
@@ -65,12 +83,6 @@ async fn main() -> Result<()> {
         }
         // Command 2: Get all token-2022 mints that have one or more token extensions
         Commands::GetTokensWithExtensions => {
-            // Create a Solana RPC client with a 600-second timeout as the accounts fetched reach almost 20M
-            let rpc = RpcClient::new_with_timeout(
-                "YOUR MAINET RPC".to_string(),
-                Duration::from_secs(600),
-            );
-
             // Fetch all Token-2022 mint accounts
             let accounts = fetch_all_token2022_mints(&rpc).await?;
 

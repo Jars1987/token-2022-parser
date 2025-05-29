@@ -2,19 +2,19 @@ use futures::future::join_all;
 use mpl_token_metadata::accounts::Metadata;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_client::rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
-use solana_client::rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType};
+use solana_client::rpc_config::{ RpcAccountInfoConfig, RpcProgramAccountsConfig };
+use solana_client::rpc_filter::{ Memcmp, MemcmpEncodedBytes, RpcFilterType };
 use solana_sdk::account::Account;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey;
 use solana_sdk::pubkey::Pubkey;
 use spl_token_2022::extension::StateWithExtensions;
-use spl_token_2022::{extension::BaseStateWithExtensions, state::Mint};
+use spl_token_2022::{ extension::BaseStateWithExtensions, state::Mint };
 
 /// Fetch all Token-2022 mint accounts on the network.
 /// These are accounts owned by the Token-2022 program ID and represent token mints.
 pub async fn fetch_all_token2022_mints(
-    rpc_client: &RpcClient,
+    rpc_client: &RpcClient
 ) -> anyhow::Result<Vec<(Pubkey, Account)>> {
     // Use a memcmp filter at offset 45 to match the `is_initialized` byte.
     // In Token-2022 mint accounts, `is_initialized` is located at byte offset 45
@@ -24,9 +24,9 @@ pub async fn fetch_all_token2022_mints(
     // This may still include false positives (e.g., token accounts that coincidentally
     // have 1 at byte 45), but those will fail due to deserialization as `Mint` or by attempting
     // to retrieve account data for the pda, so they’ll be ignored.
-    let is_initialize_filter: Option<Vec<RpcFilterType>> = Some(vec![RpcFilterType::Memcmp(
-        Memcmp::new(45, MemcmpEncodedBytes::Bytes(vec![1])),
-    )]);
+    let is_initialize_filter: Option<Vec<RpcFilterType>> = Some(
+        vec![RpcFilterType::Memcmp(Memcmp::new(45, MemcmpEncodedBytes::Bytes(vec![1])))]
+    );
 
     // Configure how to fetch accounts — we want base64-encoded data and confirmed commitment level.
     let config = RpcProgramAccountsConfig {
@@ -43,9 +43,7 @@ pub async fn fetch_all_token2022_mints(
     let program_id = pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
     // Fetch all accounts owned by the Token-2022 program
-    let accounts = rpc_client
-        .get_program_accounts_with_config(&program_id, config)
-        .await?;
+    let accounts = rpc_client.get_program_accounts_with_config(&program_id, config).await?;
 
     Ok(accounts)
 }
@@ -60,7 +58,7 @@ pub fn derive_metadata_pda(mint: &Pubkey) -> Pubkey {
 /// This is useful to check which PDAs actually exist and contain valid metadata.
 pub async fn fetch_metadata_accounts(
     rpc_client: &RpcClient,
-    metadata_pubkeys: &[Pubkey],
+    metadata_pubkeys: &[Pubkey]
 ) -> anyhow::Result<Vec<Option<Account>>> {
     let config = RpcAccountInfoConfig {
         encoding: Some(UiAccountEncoding::Base64),
@@ -80,18 +78,16 @@ pub async fn fetch_metadata_accounts(
     // Run all fetches in parallel using join_all
     let results = join_all(futures).await;
 
-    let mut all_accounts = Vec::new();
-
     // Process each response, append the results to `all_accounts`
-    for res in results {
-        match res {
-            Ok(r) => all_accounts.extend(r.value),
-            Err(e) => {
-                eprintln!("Error fetching batch: {e}");
-                all_accounts.extend(vec![None; 100]); // preserve index alignment
+    let all_accounts = results
+        .into_iter()
+        .flat_map(|res| {
+            match res {
+                Ok(r) => r.value,
+                Err(_) => vec![None; 100],
             }
-        }
-    }
+        })
+        .collect();
 
     Ok(all_accounts)
 }
@@ -102,21 +98,17 @@ pub fn print_metadata_results(metadata_pubkeys: &[Pubkey], metadata_accounts: &[
     for (pda, maybe_account) in metadata_pubkeys.iter().zip(metadata_accounts.iter()) {
         if let Some(account) = maybe_account {
             //check if this account is just a cached account. So a derived account that has been closed but still leaves in the ledger
-            if account.lamports == 0
-                || account.data.is_empty()
-                || account.owner == solana_sdk::system_program::id()
+            if
+                account.lamports == 0 ||
+                account.data.is_empty() ||
+                account.owner == solana_sdk::system_program::id()
             {
                 println!("Skipping dead metadata account: {}", pda);
                 continue;
             }
-            match Metadata::safe_deserialize(&account.data) {
-                Ok(metadata) => {
-                    println!("Mint: {}\nMetadata Account: {}\n", metadata.mint, pda);
-                }
-                Err(_) => {
-                    // Account exists but failed deserialization — likely corrupted or invalid
-                    eprintln!("Warning: Could not deserialize metadata at {}", pda);
-                }
+
+            if let Ok(metadata) = Metadata::safe_deserialize(&account.data) {
+                println!("Mint: {}\nMetadata Account: {}\n", metadata.mint, pda);
             }
         }
     }
@@ -136,8 +128,10 @@ pub fn filter_mints_with_extensions(accounts: &[(Pubkey, Account)]) -> Vec<(Pubk
 
             if !extensions.is_empty() {
                 // Format the extension types as strings for display
-                let names: Vec<String> =
-                    extensions.iter().map(|ext| format!("{:?}", ext)).collect();
+                let names: Vec<String> = extensions
+                    .iter()
+                    .map(|ext| format!("{:?}", ext))
+                    .collect();
                 results.push((*pubkey, names));
             }
         }
